@@ -1,38 +1,55 @@
 using Microsoft.AspNetCore.Mvc;
+using task_manager_backend.Application.Interfaces;
+using task_manager_backend.Application.DTOs;
+
+namespace task_manager_backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/tasks")]
 public class TasksController : ControllerBase
 {
-    private static List<TaskItem> _tasks = new()
-    {
-        new TaskItem { Id = 1, Title = "Learn backend basics", IsCompleted = false },
-        new TaskItem { Id = 2, Title = "Connect frontend to API", IsCompleted = false }
-    };
+    private readonly ITaskService _taskService;
 
+    public TasksController(ITaskService taskService)
+    {
+        _taskService = taskService;
+    }
+
+    // 1️⃣ GET /api/tasks
     [HttpGet]
     public IActionResult GetAll()
     {
-        return Ok(_tasks);
+        var tasks = _taskService.GetAll();
+        return Ok(tasks);
     }
 
+    // 2️⃣ POST /api/tasks
     [HttpPost]
-    public IActionResult Create(CreateTaskDto dto)
+    public IActionResult Create([FromBody] CreateTaskDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title))
-        {
-            return BadRequest("Title is required");
-        }
+        var createdTask = _taskService.Create(dto);
 
-        var newTask = new TaskItem
-        {
-            Id = _tasks.Max(t => t.Id) + 1,
-            Title = dto.Title,
-            IsCompleted = false
-        };
+        // RESTful yaklaşım
+        return CreatedAtAction(
+            nameof(GetAll),
+            new { id = createdTask.Id },
+            createdTask
+        );
+    }
 
-        _tasks.Add(newTask);
+    // 3️⃣ PATCH /api/tasks/{id}/complete
+    [HttpPatch("{id}/complete")]
+    public IActionResult Complete(int id)
+    {
+        _taskService.MarkAsCompleted(id);
+        return NoContent();
+    }
 
-        return Ok(newTask);
+    // 4️⃣ DELETE /api/tasks/{id}
+    [HttpDelete("{id}")]
+    public IActionResult Delete(int id)
+    {
+        _taskService.SoftDelete(id);
+        return NoContent();
     }
 }
