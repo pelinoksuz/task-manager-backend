@@ -1,42 +1,47 @@
+using Microsoft.EntityFrameworkCore;
 using task_manager_backend.Domain.Entities;
 using task_manager_backend.Application.DTOs;
 using task_manager_backend.Application.Interfaces;
+using task_manager_backend.Infrastructure.Data;
 
 namespace task_manager_backend.Application.Services;
 
 public class TaskService : ITaskService
 {
-    private static readonly List<TaskItem> _tasks = new()
+    private readonly AutoOpsDbContext _context;
+
+    public TaskService(AutoOpsDbContext context)
     {
-        new() { Id = 1, Title = "Learn backend basics", IsCompleted = false },
-        new() { Id = 2, Title = "Connect frontend to API", IsCompleted = false }
-    };
+        _context = context;
+    }
 
     public List<TaskItem> GetAll()
     {
-        return _tasks.Where(t => !t.IsDeleted).ToList();
+        return _context.Tasks
+            .Where(t => !t.IsDeleted)
+            .OrderByDescending(t => t.Id)
+            .ToList();
     }
 
     public TaskItem Create(CreateTaskDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title))
-            throw new ArgumentException("Title is required");
-
         var task = new TaskItem
         {
-            Id = _tasks.Max(t => t.Id) + 1,
             Title = dto.Title,
             IsCompleted = false,
             IsDeleted = false
         };
 
-        _tasks.Add(task);
+        _context.Tasks.Add(task);
+        _context.SaveChanges();
+
         return task;
     }
 
     public void MarkAsCompleted(int id)
     {
-        var task = _tasks.FirstOrDefault(t => t.Id == id && !t.IsDeleted);
+        var task = _context.Tasks
+            .FirstOrDefault(t => t.Id == id && !t.IsDeleted);
 
         if (task == null)
             throw new KeyNotFoundException("Task not found");
@@ -45,15 +50,17 @@ public class TaskService : ITaskService
             throw new InvalidOperationException("Task is already completed");
 
         task.IsCompleted = true;
+        _context.SaveChanges();
     }
 
     public void SoftDelete(int id)
     {
-        var task = _tasks.FirstOrDefault(t => t.Id == id);
+        var task = _context.Tasks.FirstOrDefault(t => t.Id == id);
 
         if (task == null)
             throw new KeyNotFoundException("Task not found");
 
         task.IsDeleted = true;
+        _context.SaveChanges();
     }
 }

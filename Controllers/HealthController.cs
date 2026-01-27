@@ -1,12 +1,27 @@
-using Microsoft.AspNetCore.Mvc; //MVC = Model – View – Controller
+using Microsoft.AspNetCore.Mvc;
+using task_manager_backend.Application.DTOs;
 
-[ApiController] // Request validation otomatik olur, JSON binding düzgün olur, Swagger entegrasyonu kolaylaşır
-[Route("api/[controller]")] // [controller] → class adı - controller isminin değişmesine karşın
+namespace task_manager_backend.Controllers;
+
+/// <summary>
+/// Health Check API Controller - Provides system health status
+/// </summary>
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
 public class HealthController : ControllerBase
 {
-    [HttpGet] // [HttpPost] [HttpPut] [HttpDelete] gibi HTTP metodlarını belirtir
-    public IActionResult Get() // IActionResult → Esnek response döneriz: Ok() , NotFound() , BadRequest() gibi
+    /// <summary>
+    /// Get health status of the API
+    /// </summary>
+    /// <returns>Health status</returns>
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public IActionResult Get()
     {
-        return Ok(new { status = "ok" }); // 200 OK status kodu ile JSON response döner
+        return Ok(ApiResponse<object>.SuccessResponse(
+            new { status = "ok", timestamp = DateTime.UtcNow },
+            "API is healthy"
+        ));
     }
 }

@@ -11,4 +11,5 @@ public class AutoOpsDbContext : DbContext
     }
 
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 }
